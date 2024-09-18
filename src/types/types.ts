@@ -7,14 +7,18 @@ export interface NewUserMobileRequestBody {
   role: string;
 }
 export interface NewUserRequestBody {
-  name: string;
   email: string;
-  photo: string;
-  gender: string;
-  _id: string;
-  dob: Date;
+  password: string;
+  countryCode: string;
+  mobile_number: string;
+  role: string;
+  firstName: String;
+  gender: String;
 }
-
+export interface UserLoginRequestBody {
+  email: string;
+  password: string;
+}
 export type ControllerType = (
   req: Request,
   res: Response,

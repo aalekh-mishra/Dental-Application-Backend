@@ -1,20 +1,19 @@
 import { NextFunction, Request, Response } from "express";
 import { NewUserMobileRequestBody } from "../types/types";
 import { User } from "../models/user";
-import { TryCatch } from "../middlewares/error";
+import { TryCatch } from "../middlewares/tryCatch";
 import ErrorHandler from "../utils/utility";
 import twilio from 'twilio';
-import dotenv from 'dotenv';
 import { sendToken } from "../utils/features";
+import httpError from "../utils/httpError";
+import httpResponse from "../utils/httpResponse";
+import responseMessage from "../constants/responseMessage";
+import config from "../config/config";
 
-// Load environment variables based on the environment
-const env = process.env.NODE_ENV || 'development';
-dotenv.config({ path: `.env.${env}` });
 
-
-const accountSid =  process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const serviceID:any = process.env.TWILIO_SERVICE_ID;
+const accountSid =  config.TWILIO_ACCOUNT_SID;
+const authToken = config.TWILIO_AUTH_TOKEN;
+const serviceID:any = config.TWILIO_SERVICE_ID;
 const client = twilio(accountSid, authToken);
 // console.log("serviceID: ", serviceID)
 // console.log("accountSid: ", accountSid);
@@ -121,18 +120,65 @@ const verifyMobileOtp = TryCatch(
     }
 )
 
-const getMyProfile = TryCatch(async (req:any, res) => {
-    // httpResponse(req, res, 200, responseMessage.SUCCESS, healthData)
+const getPatientMyProfile = TryCatch(async (req:any, res, next) => {
+    const user:any = await User.findById({ _id: req.userId });
 
-    // httpError(next, err, req, 500)
-    return res.status(200).json({
-        success: true,
-        data: req.user,
-    })
+    if(user.role !== "patient") return next(new ErrorHandler("You are not a patient", 400));
+    // console.log("user", user);
+    httpResponse(req, res, 200, responseMessage.SUCCESS, user);
+});
+
+const patchPatientProfile = TryCatch(async (req:any, res, next) => {
+    const _id = req.params.id;
+    let updateData = req.body; // assuming form-data is used
+    let userEmail;
+    // If there's a file, include it in the update data
+    console.log("updateData", updateData, req.file);
+    if (req.file) {
+        updateData.avatar = req.file.path;
+    }
+    userEmail=updateData.email;
+    updateData = {
+        firstName: updateData.firstName,
+        middleName: updateData.middleName,
+        lastName: updateData.lastName,
+        avatar: updateData.avatar,
+        bio: updateData.bio,
+        gender: updateData.gender,
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+        _id,
+        {
+            $set: {
+                email: userEmail,
+                profile: updateData  // Include this if there's a file uploaded
+            }
+        },
+        { new: true }
+        // { new: true, runValidators: true }  // Ensure validators run and return the updated document
+    );
+
+    // console.log("updatedUser", updatedUser);
+
+    if (!updatedUser) return next(new ErrorHandler("Patient not found", 404));
+
+    // console.log("user", user);
+    httpResponse(req, res, 200, responseMessage.SUCCESS, updatedUser);
+});
+
+const getDoctorMyProfile = TryCatch(async (req:any, res, next) => {
+    const user:any = await User.findById({ _id: req.userId });
+
+    if(user.role !== "doctor") return next(new ErrorHandler("You are not a doctor", 400));
+    // console.log("user", user);
+    httpResponse(req, res, 200, responseMessage.SUCCESS, user);
 });
 
 export {
     mobileLoginUser, 
     verifyMobileOtp, 
-    getMyProfile, 
+    getPatientMyProfile, 
+    getDoctorMyProfile,
+    patchPatientProfile,
 };

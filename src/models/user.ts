@@ -103,14 +103,15 @@ export interface IUser extends Document {
     _id: string;
     getSignedToken():string;
     mobile_number: string;
-    role: "admin" | "doctor" | "patient";
+    role: "admin" | "doctor" | "patient" | "manager";
+    email: string,
+    password?: string,
     profile: {
         firstName: String,
         middleName: String,
         lastName: String,
         avatar: String,
         bio: String,
-        email: string,
         gender: "male" | "female" | "other";
         dob: Date;
         address: {
@@ -149,19 +150,24 @@ const UserSchema: Schema = new Schema({
             type: String,
             required: [true, "Country Code is required"],
         },
+        email: {
+            type: String,
+            lowercase: true,
+            match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Please use a valid address'],
+            unique:true,
+            sparse: true  // This allows multiple null values
+        },
+        password: {
+            type: String,
+            required: false,
+            select: false // This will exclude password from the result by default
+        },
         profile: {
             firstName: String,
             middleName: String,
             lastName: String,
             avatar: String,
             bio: String,
-            email: {
-                type: String,
-                lowercase: true,
-                match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Please use a valid address'],
-                unique:true,
-                sparse: true  // This allows multiple null values
-            },
             gender: {
                 type: String,
                 enum: ["male", "female", "other"],
@@ -203,5 +209,6 @@ UserSchema.methods.getSignedToken = function (password:string) {
 //     return resetToken
 
 // }
+
 
 export const User = mongoose.model<IUser>("User", UserSchema);

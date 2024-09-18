@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { ControllerType } from "../types/types.js";
-import ErrorHandler from "../utils/utility.js";
+
+import ErrorHandler from "../utils/utility";
+import httpError from "../utils/httpError";
 
 export const errorMiddleware = (
   err: ErrorHandler,
@@ -13,13 +14,6 @@ export const errorMiddleware = (
 
   if (err.name === "CastError") err.message = "Invalid ID";
 
-  return res.status(err.statusCode).json({
-    success: false,
-    message: err.message,
-  });
-};
-
-export const TryCatch = (func: ControllerType) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    return Promise.resolve(func(req, res, next)).catch(next);
+  httpError(next, err, req, err.statusCode, res); 
+  
 };

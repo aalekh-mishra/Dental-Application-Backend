@@ -1,4 +1,4 @@
-import { Request } from 'express'
+import { Request, Response } from 'express'; 
 import { THttpError } from '../types/types'
 import config from '../config/config'
 import logger from './logger'
@@ -6,7 +6,7 @@ import { EApplicationEnvironment } from '../constants/application'
 import responseMessage from '../constants/responseMessage'
 
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-export default (err: Error | unknown, req: Request, errorStatusCode: number = 500): THttpError => {
+export default (err: Error | unknown, req: Request, errorStatusCode: number = 500, res: Response): void => {
     const errorObj: THttpError = {
         success: false,
         statusCode: errorStatusCode,
@@ -25,11 +25,12 @@ export default (err: Error | unknown, req: Request, errorStatusCode: number = 50
         meta: errorObj
     })
 
-    // Production Env check
+    // Production Env check // Hide sensitive information in production
     if (config.NODE_ENV === EApplicationEnvironment.PRODUCTION) {
         delete errorObj.request.ip
         delete errorObj.trace
     }
 
-    return errorObj
+    // Send the error response
+    res.status(errorObj.statusCode).json(errorObj);
 }

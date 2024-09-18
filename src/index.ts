@@ -1,37 +1,40 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
+import helmet from 'helmet';
 
+import { errorMiddleware } from './middlewares/error';
+import rateLimit from './middlewares/rateLimit';
 
 // Importing Routes
 import userRoute from "./routes/user";
-import { errorMiddleware } from './middlewares/error';
-import helmet from 'helmet';
-import rateLimit from './middlewares/rateLimit';
+import adminRoute from "./routes/admin";
+import config from './config/config';
 
 
 const app: Application = express();
-// const PORT = process.env.PORT || 8099;
-// const dbUri: string | undefined = process.env.MONGO_URI;
-
 
 //Middleware
 app.use(helmet());
+
+
 // Enable CORS
-app.use(cors());
+// app.use(cors());
 // You can also configure CORS with options if needed
-/*
+
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://yourdomain.com'], // Replace with your frontend domains
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: [config.CLIENT_URL as string, 'http://localhost:3000', 'http://yourdomain.com'], // Replace with your frontend domains
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'browsername', 'osname', 'appversion',],
   credentials: true, // Enable cookies and other credentials
 };
 
 app.use(cors(corsOptions));
-*/
+
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // This middleware parses `application/x-www-form-urlencoded`
+
 
 app.use(cookieParser()); // for accessing req.cookie in the auth middleware
 
@@ -42,13 +45,12 @@ app.get('/', rateLimit, (req, res) => {
 // Using Routes
 app.use("/api/v1/user", userRoute);
 
+// Using Admin Routes
+app.use("/api/v1/user", adminRoute);
+
 app.use("/uploads", express.static("uploads"));
 
 app.use(errorMiddleware);
-
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port ${PORT}`);
-// });
 
 
 export default app
