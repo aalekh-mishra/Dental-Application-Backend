@@ -1,4 +1,5 @@
 import multer from "multer";
+
 const multerUpload = multer({
     limits: {
         fileSize: 1024 * 1024 * 5,
@@ -6,4 +7,4 @@ const multerUpload = multer({
 });
 
 export const singleUpload = multerUpload.single("avatar");
-// export const mutliUpload = multer().array("photos", 5);
+export const mutliUpload = multer().array("files", 5);

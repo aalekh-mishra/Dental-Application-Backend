@@ -1,0 +1,24 @@
+{
+    "builds": [
+      {
+        "src": "dist/server.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "headers":{ 
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,PATCH,DELETE,OPTIONS,POST,PUT", 
+                "Access-Control-Allow-Headers":"Authorization,Origin,access-control-allow-credentials,X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
+                "Access-Control-Expose-Headers": "Authorization,Origin,X-Requested-With,Content-Type,Accept,X-Access-Token,access-control-allow-credentials",
+                "access-control-request-headers": "access-control-allow-credentials,content-type", 
+                "access-control-request-method": "GET"
+        },
+        "dest": "dist/server.js"
+      }
+    ]
+  }
+  

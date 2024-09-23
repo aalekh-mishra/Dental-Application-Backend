@@ -95,6 +95,23 @@ const adminLogOut = TryCatch(async(req, res, next)=> {
       });
 });
 
+// patch code where upload image in cloundinary
+
+// const file = req.file;
+
+//     if(!file) return next(new ErrorHandler("Please Upload Avatar", 400));
+
+//     const result = await uploadFilesToCloudinary([file]);
+
+//     // const avatar = {
+//     //     public_id: "Sadlfsjd",
+//     //     url: "alsfjsl",
+//     // }
+//     const avatar = {
+//         public_id: result[0].public_id,
+//         url: result[0].url,
+//     }
+
 export {
   adminRegister,
   adminLoginWithEmailPassword,

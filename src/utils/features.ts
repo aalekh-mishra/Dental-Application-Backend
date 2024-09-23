@@ -10,7 +10,7 @@ const cookieOptions:any = {
 }
 const sendToken = async (res: Response, user:any, code:number, message:string) => {
     // Generate JWT token
-    const token = jwt.sign({_id: user[0]._id}, config.JWT_SECRET as string, { expiresIn: '90d' });
+    const token = jwt.sign({_id: user._id}, config.JWT_SECRET as string, { expiresIn: '90d' });
 
     return res
         .status(code)

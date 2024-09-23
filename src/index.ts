@@ -48,8 +48,6 @@ app.use("/api/v1/user", userRoute);
 // Using Admin Routes
 app.use("/api/v1/user", adminRoute);
 
-app.use("/uploads", express.static("uploads"));
-
 app.use(errorMiddleware);
 
 

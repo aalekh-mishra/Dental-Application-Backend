@@ -1,4 +1,4 @@
-
+import {v2 as cloudinary} from "cloudinary";
 import app from './index'
 import config from './config/config'
 
@@ -20,7 +20,18 @@ const server = app.listen(config.PORT, () => {
             meta: {
                 CONNECTION_NAME: connection.name
             }
-        })
+        });
+
+        cloudinary.config({
+            cloud_name: config.CLOUDINARY_CLOUD_NAME,
+            api_key: config.CLOUDINARY_API_KEY,
+            api_secret: config.CLOUDINARY_API_SECRET,
+        });
+        logger.info(`CLOUDINARY_CONNECTION`, {
+            meta: {
+                CLOUD_CONNECTION_NAME: config.CLOUDINARY_CLOUD_NAME,  
+            }
+        });
 
         initRateLimiter(connection)
         logger.info(`RATE_LIMITER_INITIATED`)

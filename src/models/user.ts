@@ -106,6 +106,7 @@ export interface IUser extends Document {
     role: "admin" | "doctor" | "patient" | "manager";
     email: string,
     password?: string,
+    otp?: string;
     profile: {
         firstName: String,
         middleName: String,
@@ -161,6 +162,11 @@ const UserSchema: Schema = new Schema({
             type: String,
             required: false,
             select: false // This will exclude password from the result by default
+        },
+        otp: {
+            type: String,
+            required: false,
+            select: false // This will exclude otp from the result by default
         },
         profile: {
             firstName: String,

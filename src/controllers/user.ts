@@ -9,6 +9,9 @@ import httpError from "../utils/httpError";
 import httpResponse from "../utils/httpResponse";
 import responseMessage from "../constants/responseMessage";
 import config from "../config/config";
+import { generateOTP } from "../utils/otp";
+
+// const textflow = require("textflow.js");
 
 
 const accountSid =  config.TWILIO_ACCOUNT_SID;
@@ -18,6 +21,7 @@ const client = twilio(accountSid, authToken);
 // console.log("serviceID: ", serviceID)
 // console.log("accountSid: ", accountSid);
 // console.log("authToken: ", authToken);
+// textflow.useKey("6VAeDYFefF09aybKHWtCutyofIJkZGUtfhehrhiThErXILRvrE5JC0F8lNSerqFw");
 
 const mobileLoginUser = TryCatch(
     async(
@@ -31,10 +35,16 @@ const mobileLoginUser = TryCatch(
         if (!countryCode ) return next(new ErrorHandler("Please give country code", 400));
         if (!role ) return next(new ErrorHandler("Please choose role", 400));
     
-        let user:any = await User.find({mobile_number});
+        let user:any = await User.findOne({mobile_number});
         // console.log("user: ", user);
-        if (user.length > 0) {
-            // console.log("if called")
+        // generate otp
+        const otp = generateOTP(6);
+        
+
+        if ( Object.keys(user).length > 0) {
+            // save otp to user collection
+            user.otp = otp;
+            // await user.save();
             client.verify.v2.services(serviceID)
                 .verifications
                 .create({to: `+${countryCode}${mobile_number}`, channel: 'sms'})
@@ -42,7 +52,7 @@ const mobileLoginUser = TryCatch(
                     console.log(verification.sid);
                     return res.status(200).json({
                         success: true,
-                        message: `OTP send successfully on this number ${user[0].mobile_number}`
+                        message: `OTP send successfully on this number ${user.mobile_number}`
                     });
                 })
                 .catch((error) => {
@@ -62,7 +72,8 @@ const mobileLoginUser = TryCatch(
                     user = await User.create({
                         mobile_number,
                         role,
-                        countryCode
+                        countryCode,
+                        // otp
                     });
                     return res.status(201).json({
                         success: true,
@@ -101,7 +112,7 @@ const verifyMobileOtp = TryCatch(
         .then(async (data) => {
           if (data.status === "approved") {
             console.log("approved succussfully");
-            let user:any = await User.find({mobile_number});
+            let user:any = await User.findOne({mobile_number});
             sendToken(res, user, 201, "User login successfully");
           } else {
             return res.status(400).send({
