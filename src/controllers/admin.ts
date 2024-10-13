@@ -55,7 +55,7 @@ const adminLoginWithEmailPassword = TryCatch(
       const { email, password } = req.body;
 
       // Check if the user exists
-      const user = await User.findOne({ email }).select('+password');;
+      const user = await User.findOne({ email }).select('+password');
       console.log("user: ", user );
       if (!user) return next(new ErrorHandler("Invalid email or password", 400));  
         

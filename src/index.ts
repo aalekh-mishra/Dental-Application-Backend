@@ -11,6 +11,7 @@ import userRoute from "./routes/user";
 import adminRoute from "./routes/admin";
 import config from './config/config';
 
+import './utils/otpCleanup'; // Import the cron job
 
 const app: Application = express();
 

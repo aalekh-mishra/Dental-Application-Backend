@@ -42,51 +42,91 @@ const mobileLoginUser = TryCatch(
         
 
         if ( Object.keys(user).length > 0) {
-            // save otp to user collection
+            console.log("otp: ", otp);
+           
+            const expiresOtpAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
             user.otp = otp;
+            user.expiresOtpAt = expiresOtpAt; // Assuming you have an expiresOtpAt field in your User schema
+            await user.save(); // Save the updated user
+            // await User.create({ otp, expiresOtpAt });
+            // save otp to user collection
+            // user.otp = otp;
             // await user.save();
-            client.verify.v2.services(serviceID)
-                .verifications
-                .create({to: `+${countryCode}${mobile_number}`, channel: 'sms'})
-                .then((verification: any) => {
-                    console.log(verification.sid);
-                    return res.status(200).json({
-                        success: true,
-                        message: `OTP send successfully on this number ${user.mobile_number}`
-                    });
-                })
-                .catch((error) => {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Invalid mobile number`,
-                        details: error
-                    })
-                }) 
+            // Send OTP to the user's phone number using Twilio
+            await client.messages.create({
+                body: `Your OTP is ${otp}`,
+                from: config.TWILIO_PHONE_NUMBER!,
+                to: `+${countryCode}${mobile_number}`
+            });
+            // client.verify.v2.services(serviceID)
+            //     .verifications
+            //     .create({to: `+${countryCode}${mobile_number}`, channel: 'sms'})
+            //     .then((verification: any) => {
+            //         console.log(verification.sid);
+            //         return res.status(200).json({
+            //             success: true,
+            //             message: `OTP send successfully on this number ${user.mobile_number}`
+            //         });
+            //     })
+            //     .catch((error) => {
+            //         return res.status(400).json({
+            //             success: false,
+            //             message: `Invalid mobile number`,
+            //             details: error
+            //         })
+            //     }) 
+            return res.status(200).json({
+                success: true,
+                message: `OTP send successfully on this number ${user.mobile_number}`,
+            });
         } else {
             // console.log("user created: ", `OTP send successfully on this number ${user.mobile_number}`, user);
-            client.verify.v2.services(serviceID)
-                .verifications
-                .create({to: `+${countryCode}${mobile_number}`, channel: 'sms'})
-                .then(async(verification: any) => {
-                    console.log(verification.sid);
-                    user = await User.create({
-                        mobile_number,
-                        role,
-                        countryCode,
-                        // otp
-                    });
-                    return res.status(201).json({
-                        success: true,
-                        message: `OTP send successfully on this number ${user.mobile_number}`,
-                    });
-                })
-                .catch((error) => {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Invalid mobile number`,
-                        details: error
-                    })
-                })
+            // client.verify.v2.services(serviceID)
+            //     .verifications
+            //     .create({to: `+${countryCode}${mobile_number}`, channel: 'sms'})
+            //     .then(async(verification: any) => {
+            //         console.log(verification.sid);
+            //         user = await User.create({
+            //             mobile_number,
+            //             role,
+            //             countryCode,
+            //         });
+            //         return res.status(201).json({
+            //             success: true,
+            //             message: `OTP send successfully on this number ${user.mobile_number}`,
+            //         });
+            //     })
+            //     .catch((error) => {
+            //         return res.status(400).json({
+            //             success: false,
+            //             message: `Invalid mobile number`,
+            //             details: error
+            //         })
+            //     })
+            if(role === "doctor") {
+                user = await User.create({
+                    mobile_number,
+                    role,
+                    countryCode,
+                    status: 'pending'
+                });
+            } else {
+                user = await User.create({
+                    mobile_number,
+                    role,
+                    countryCode,
+                    status: 'patient_approved'
+                });
+            }
+            await client.messages.create({
+                body: `Your OTP is ${otp}`,
+                from: config.TWILIO_PHONE_NUMBER!,
+                to: `+${countryCode}${mobile_number}`
+            });
+            return res.status(201).json({
+                success: true,
+                message: `OTP send successfully on this number ${user.mobile_number}`,
+            });
         }
     }
 )
@@ -104,30 +144,51 @@ const verifyMobileOtp = TryCatch(
         if (!countryCode ) return next(new ErrorHandler("Please give country code", 400));
         if (!otp || otp.length !== 6 ) return next(new ErrorHandler("Please give 6 digit OTP", 400));
 
-        client.verify.v2.services(serviceID) 
-        .verificationChecks.create({
-          to: `+${countryCode}${mobile_number}`,
-          code: otp,
-        })
-        .then(async (data) => {
-          if (data.status === "approved") {
-            console.log("approved succussfully");
-            let user:any = await User.findOne({mobile_number});
-            sendToken(res, user, 201, "User login successfully");
-          } else {
-            return res.status(400).send({
-              message: "User is not Verified!!",
-              data,
-            });
-          }
-        })
-        .catch((error) => {
+        let user:any = await User.findOne({mobile_number}).select('+otp');
+        if(Object.keys(user).length > 0){
+            console.log("user.otp: ", user.otp, " otp: ", otp);
+            if(user.otp === otp){
+                // Convert the user object to a plain JavaScript object
+                const userWithoutOtp = user.toObject();
+
+                // Manually remove the otp field
+                delete userWithoutOtp.otp; // Ensure the otp field is removed
+                sendToken(res, userWithoutOtp, 201, "User login successfully");
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: `User is not Verified!!`
+                })
+            }
+        } else {
             return res.status(400).json({
                 success: false,
-                message: `User is not Verified!!`,
-                details: error
+                message: `User is not exists this number`
             })
-        });
+        }
+        // client.verify.v2.services(serviceID) 
+        // .verificationChecks.create({
+        //   to: `+${countryCode}${mobile_number}`,
+        //   code: otp,
+        // })
+        // .then(async (data) => {
+        //   if (data.status === "approved") {
+        //     console.log("approved succussfully");
+        //     sendToken(res, user, 201, "User login successfully");
+        //   } else {
+        //     return res.status(400).send({
+        //       message: "User is not Verified!!",
+        //       data,
+        //     });
+        //   }
+        // })
+        // .catch((error) => {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: `User is not Verified!!`,
+        //         details: error
+        //     })
+        // });
     }
 )
 
